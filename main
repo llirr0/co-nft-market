@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>CO-NFT — HopWeb Mobile Prototype</title>
+<style>
+  /* ---------- Variables ---------- */
+  :root{
+    --bg:#070707;
+    --panel:#0d0d0d;
+    --accent:#ffd400;
+    --muted:#bdbdbd;
+    --glass: rgba(255,212,0,0.04);
+    --radius:14px;
+    --gap:12px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;background:
+    linear-gradient(180deg,var(--bg),#050505); color:var(--muted); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+
+  /* ---------- Smooth Animations ---------- */
+  @keyframes fadeIn{
+    from{opacity:0;transform:translateY(10px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  @keyframes slideUp{
+    from{opacity:0;transform:translateY(20px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  @keyframes scaleIn{
+    from{opacity:0;transform:scale(0.9)}
+    to{opacity:1;transform:scale(1)}
+  }
+  @keyframes floaty{0%{transform:translateY(0)}50%{transform:translateY(-6px)}100%{transform:translateY(0)}}
+  @keyframes shake{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
+  @keyframes giftPulse{
+    0%,100%{transform:scale(1);box-shadow:0 0 20px rgba(255,212,0,0.2)}
+    50%{transform:scale(1.05);box-shadow:0 0 30px rgba(255,212,0,0.4)}
+  }
+
+  .fade{animation:fadeIn 0.4s ease-out forwards}
+  .slide-up{animation:slideUp 0.5s ease-out forwards}
+  .scale-in{animation:scaleIn 0.3s ease-out forwards}
+
+  /* ---------- Layout ---------- */
+  .app{
+    max-width:420px;
+    margin:0 auto;
+    padding:18px;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    gap:var(--gap);
+  }
+  header{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    background:linear-gradient(180deg, rgba(255,212,0,0.03), transparent);
+    padding:12px;
+    border-radius:12px;
+    border:1px solid rgba(255,212,0,0.06);
+    box-shadow:0 10px 30px rgba(0,0,0,0.6);
+    animation:slideUp 0.5s ease-out;
+  }
+  .logo{
+    width:56px;height:56px;border-radius:12px;background:
+    linear-gradient(135deg,#111,#0b0b0b);
+    display:grid;place-items:center;border:2px solid rgba(255,212,0,0.12);position:relative;overflow:hidden;
+    transform-origin:center;
+    animation:floaty 6s ease-in-out infinite;
+  }
+  .hex{
+    width:28px;height:28px;clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);
+    background:linear-gradient(180deg,var(--accent),#ffc94d); box-shadow:0 6px 18px rgba(0,0,0,0.7);
+  }
+  .title{font-weight:800;color:var(--accent);letter-spacing:0.06em;font-size:18px}
+  .subtitle{font-size:12px;color:var(--muted)}
+  .header-controls{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+  .tab-btn{
+    background:transparent;
+    border:1px solid rgba(255,212,0,0.06);
+    padding:8px 12px;
+    border-radius:10px;
+    color:var(--accent);
+    font-weight:700;
+    cursor:pointer;
+    transition:var(--transition);
+    font-size:13px;
+  }
+  .tab-btn:hover{background:rgba(255,212,0,0.08);transform:translateY(-2px)}
+  .tab-btn.active{background:rgba(255,212,0,0.12);border-color:rgba(255,212,0,0.2)}
+
+  main{flex:1;display:flex;flex-direction:column;gap:12px}
+
+  /* ---------- Card ---------- */
+  .card{
+    background:linear-gradient(180deg,var(--panel),#0a0a0a);
+    border-radius:var(--radius);
+    padding:16px;
+    border:1px solid rgba(255,212,0,0.04);
+    box-shadow:0 8px 30px rgba(0,0,0,0.6);
+    transition:var(--transition);
+  }
+  .card:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,0.7)}
+  .small{font-size:12px;color:var(--muted)}
+  .muted{color:#9e9e9e}
+
+  /* ---------- Gift Box (Roll) ---------- */
+  .roll-section{display:flex;flex-direction:column;gap:14px;align-items:center}
+  .boxes{display:flex;gap:12px;justify-content:center;margin:10px 0}
+  .box{
+    width:100px;
+    height:130px;
+    border-radius:12px;
+    background:linear-gradient(135deg,#1a1a1a,#0a0a0a);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    overflow:hidden;
+    touch-action:manipulation;
+    cursor:pointer;
+    transition:var(--transition);
+    border:2px solid rgba(255,212,0,0.15);
+  }
+  .box:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 10px 30px rgba(255,212,0,0.3)}
+  .box.gift-mode{
+    animation:giftPulse 2s ease-in-out infinite;
+  }
+  .box.selected{
+    border-color:var(--accent);
+    box-shadow:0 0 30px rgba(255,212,0,0.5);
+    transform:scale(1.05);
+  }
+
+  /* Gift Box Design */
+  .gift-box{
+    width:70px;
+    height:70px;
+    background:linear-gradient(135deg,#000,#1a1a1a);
+    border:3px solid var(--accent);
+    border-radius:8px;
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .gift-box::before{
+    content:'';
+    position:absolute;
+    width:8px;
+    height:100%;
+    background:var(--accent);
+    left:50%;
+    transform:translateX(-50%);
+  }
+  .gift-box::after{
+    content:'';
+    position:absolute;
+    width:100%;
+    height:8px;
+    background:var(--accent);
+    top:50%;
+    transform:translateY(-50%);
+  }
+  .gift-ribbon{
+    position:absolute;
+    top:-10px;
+    width:30px;
+    height:20px;
+    background:var(--accent);
+    border-radius:4px 4px 0 0;
+  }
+  .gift-ribbon::before,
+  .gift-ribbon::after{
+    content:'';
+    position:absolute;
+    top:0;
+    width:15px;
+    height:15px;
+    background:var(--accent);
+    border-radius:50%;
+  }
+  .gift-ribbon::before{left:-8px}
+  .gift-ribbon::after{right:-8px}
+
+  .placeholder{
+    width:70px;height:70px;border-radius:10px;
+    background:linear-gradient(180deg,#0b0b0b,#0a0a0a);
+    display:grid;place-items:center;
+    border:2px solid rgba(255,212,0,0.04);
+    transition:var(--transition);
+  }
+  .box .label{
+    position:absolute;
+    bottom:10px;
+    font-size:11px;
+    color:var(--accent);
+    font-weight:700;
+    text-transform:uppercase;
+  }
+
+  .spin-btn{
+    margin-top:8px;
+    padding:14px 28px;
+    border-radius:12px;
+    background:linear-gradient(135deg,var(--accent),#ffc94d);
+    color:#080808;
+    font-weight:900;
+    border:none;
+    box-shadow:0 10px 30px rgba(255,212,0,0.3);
+    font-size:16px;
+    cursor:pointer;
+    transition:var(--transition);
+  }
+  .spin-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 15px 40px rgba(255,212,0,0.4)}
+  .spin-btn:active:not(:disabled){transform:translateY(0)}
+  .spin-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+
+  /* ---------- Inventory ---------- */
+  .inventory-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .inventory-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .inv-card{
+    border-radius:10px;
+    border:1px solid rgba(255,212,0,0.04);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:8px;
+    background:linear-gradient(180deg,rgba(255,212,0,0.02),transparent);
+    transition:var(--transition);
+    cursor:pointer;
+  }
+  .inv-card:hover{
+    transform:translateY(-4px);
+    border-color:rgba(255,212,0,0.15);
+    box-shadow:0 8px 20px rgba(0,0,0,0.5);
+  }
+  .inv-card img{width:100%;height:96px;object-fit:cover;border-radius:8px;transition:var(--transition)}
+  .inv-card:hover img{transform:scale(1.05)}
+  .inv-meta{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    padding-top:8px;
+    font-size:12px;
+  }
+  .inv-meta-row{display:flex;justify-content:space-between;align-items:center}
+
+  .badge{
+    padding:6px 10px;
+    border-radius:8px;
+    background:rgba(255,212,0,0.08);
+    color:var(--accent);
+    font-weight:700;
+    font-size:12px;
+    border:1px solid rgba(255,212,0,0.1);
+    white-space:nowrap;
+    transition:var(--transition);
+  }
+  .badge:hover{background:rgba(255,212,0,0.12)}
+
+  /* ---------- Craft/Upgrade Combined ---------- */
+  .action-tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:14px;
+    border-bottom:2px solid rgba(255,212,0,0.06);
+    padding-bottom:8px;
+  }
+  .action-tab{
+    padding:10px 16px;
+    background:transparent;
+    border:none;
+    color:var(--muted);
+    font-weight:700;
+    cursor:pointer;
+    border-radius:8px 8px 0 0;
+    transition:var(--transition);
+    position:relative;
+  }
+  .action-tab:hover{color:var(--accent);background:rgba(255,212,0,0.04)}
+  .action-tab.active{color:var(--accent);background:rgba(255,212,0,0.08)}
+  .action-tab.active::after{
+    content:'';
+    position:absolute;
+    bottom:-10px;
+    left:0;
+    right:0;
+    height:2px;
+    background:var(--accent);
+  }
+
+  /* ---------- Controls ---------- */
+  .controls-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .ghost{
+    background:transparent;
+    border:1px solid rgba(255,212,0,0.06);
+    color:var(--accent);
+    padding:8px 12px;
+    border-radius:10px;
+    font-weight:700;
+    cursor:pointer;
+    transition:var(--transition);
+    font-size:13px;
+  }
+  .ghost:hover{background:rgba(255,212,0,0.08);transform:translateY(-2px)}
+
+  /* ---------- Market Improved ---------- */
+  .market-section{display:flex;flex-direction:column;gap:12px}
+  .market-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .market-tabs{display:flex;gap:8px;flex-wrap:wrap}
+
+  .listing{
+    padding:12px;
+    border-radius:10px;
+    border:1px solid rgba(255,212,0,0.06);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    background:linear-gradient(180deg,rgba(255,212,0,0.02),transparent);
+    transition:var(--transition);
+  }
+  .listing:hover{
+    border-color:rgba(255,212,0,0.12);
+    transform:translateX(4px);
+    box-shadow:0 4px 15px rgba(0,0,0,0.4);
+  }
+  .listing-info{
+    flex:1;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .listing-title{
+    font-weight:800;
+    color:var(--accent);
+    font-size:14px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .listing-seller{font-size:11px;color:var(--muted)}
+  .listing-price-area{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:6px;
+  }
+  .listing-price{
+    font-size:13px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-root{
+    position:fixed;
+    inset:0;
+    display:none;
+    place-items:center;
+    background:linear-gradient(180deg,rgba(0,0,0,0.6),rgba(0,0,0,0.8));
+    backdrop-filter:blur(8px);
+    z-index:1200;
+    animation:fadeIn 0.3s ease-out;
+  }
+  .dialog{
+    width:92%;
+    max-width:640px;
+    max-height:85vh;
+    overflow-y:auto;
+    border-radius:14px;
+    padding:16px;
+    background:linear-gradient(180deg,#0c0c0c,#080808);
+    border:1px solid rgba(255,212,0,0.08);
+    box-shadow:0 20px 60px rgba(0,0,0,0.9);
+    animation:scaleIn 0.3s ease-out;
+  }
+  .close-btn{
+    float:right;
+    background:transparent;
+    border:1px solid rgba(255,212,0,0.06);
+    color:var(--accent);
+    padding:6px 10px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:var(--transition);
+  }
+  .close-btn:hover{background:rgba(255,212,0,0.08)}
+
+  /* ---------- Form Elements ---------- */
+  input, select, textarea{
+    width:100%;
+    padding:10px 12px;
+    border-radius:10px;
+    background:rgba(255,212,0,0.02);
+    border:1px solid rgba(255,212,0,0.06);
+    color:var(--muted);
+    font-family:inherit;
+    transition:var(--transition);
+  }
+  input:focus, select:focus, textarea:focus{
+    outline:none;
+    border-color:rgba(255,212,0,0.2);
+    background:rgba(255,212,0,0.04);
+  }
+
+  /* ---------- Responsive mobile ---------- */
+  @media(max-width:420px){
+    .boxes{gap:8px}
+    .box{width:90px;height:120px}
+    .inventory-grid{grid-template-columns:repeat(3,1fr);gap:8px}
+    .header-controls{gap:4px}
+    .tab-btn{padding:6px 10px;font-size:12px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo"><div class="hex"></div></div>
+    <div>
+      <div class="title">CO-NFT</div>
+      <div class="subtitle">CODE ON NFT</div>
+    </div>
+    <div class="header-controls">
+      <button class="tab-btn active" data-tab="roll">Ролл</button>
+      <button class="tab-btn" data-tab="inv">Инвентарь</button>
+      <button class="tab-btn" data-tab="actions">Действия</button>
+      <button class="tab-btn" data-tab="market">Маркет</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Roll / Choose -->
+    <section id="page-roll" class="card roll-section">
+      <div style="width:100%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div style="flex:1;min-width:200px">
+          <div style="font-weight:900;color:var(--accent)">Ролл моделей</div>
+          <div class="small muted">Выберите один подарок из трёх</div>
+        </div>
+        <div class="badge" id="counter-nft">0 NFT</div>
+      </div>
+
+      <div class="boxes" id="boxes">
+        <div class="box" data-index="0">
+          <div class="gift-box">
+            <div class="gift-ribbon"></div>
+          </div>
+          <div class="label small">?</div>
+        </div>
+        <div class="box" data-index="1">
+          <div class="gift-box">
+            <div class="gift-ribbon"></div>
+          </div>
+          <div class="label small">?</div>
+        </div>
+        <div class="box" data-index="2">
+          <div class="gift-box">
+            <div class="gift-ribbon"></div>
+          </div>
+          <div class="label small">?</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button id="spin" class="spin-btn">SPIN</button>
+        <div class="small muted">Вращайте барабан</div>
+      </div>
+
+      <div class="card" style="width:100%">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <div class="info" style="flex:1;min-width:180px">
+            <div style="font-weight:800;color:var(--accent);margin-bottom:6px">Выбор подарка</div>
+            <div class="small muted">Нажмите SPIN для вращения барабана, затем выберите один из трёх подарков</div>
+            <div style="height:10px"></div>
+            <div class="controls-row">
+              <button id="openInventoryBtn" class="ghost">Инвентарь</button>
+              <button id="openMarketBtn" class="ghost">Маркет</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Inventory -->
+    <section id="page-inv" class="card" style="display:none;">
+      <div class="inventory-header">
+        <div>
+          <div style="font-weight:900;color:var(--accent)">Инвентарь</div>
+          <div class="small muted">Ваши NFT и коды</div>
+        </div>
+        <button id="rollCodeInvBtn" class="ghost">Прокрутить код</button>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:8px">NFT Коллекция</div>
+        <div class="inventory-grid" id="inventoryGrid"></div>
+      </div>
+
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,212,0,0.06)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-weight:700;color:var(--accent)">Ваши коды</div>
+          <div class="badge" id="codesCount">0 кодов</div>
+        </div>
+        <div id="codesList" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+    </section>
+
+    <!-- Actions (Craft + Upgrade Combined) -->
+    <section id="page-actions" class="card" style="display:none;">
+      <div style="font-weight:900;color:var(--accent);margin-bottom:4px">Действия с NFT</div>
+      <div class="small muted" style="margin-bottom:12px">Улучшайте и эволюционируйте ваши NFT</div>
+
+      <div class="action-tabs">
+        <button class="action-tab active" data-action="upgrade">Апгрейд</button>
+        <button class="action-tab" data-action="craft">Эволюция</button>
+      </div>
+
+      <!-- Upgrade Panel -->
+      <div id="upgrade-panel">
+        <div class="small muted" style="margin-bottom:10px">Примените код к NFT для улучшения</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+          <select id="upgradeSelect" style="flex:1;min-width:150px"></select>
+          <button id="applyUpgradeBtn" class="spin-btn" style="margin:0">Применить код</button>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <div class="info" style="flex:1;min-width:150px">
+            <div id="upgradeInfo" style="font-weight:800;color:var(--accent);margin-bottom:4px">—</div>
+            <div class="small muted" id="upgradeDesc">Выберите NFT и код для апгрейда</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Craft Panel -->
+      <div id="craft-panel" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="small muted">Выберите 2-3 NFT для эволюции</div>
+          <div class="small muted" id="craftCounter">0 выбрано</div>
+        </div>
+        <div id="craftList" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px"></div>
+        <div style="display:flex;gap:8px">
+          <button id="doCraftBtn" class="spin-btn" style="flex:1;margin:0">Эволюционировать</button>
+          <button id="resetCraftBtn" class="ghost">Сбросить</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Market -->
+    <section id="page-market" class="card market-section" style="display:none;">
+      <div class="market-header">
+        <div>
+          <div style="font-weight:900;color:var(--accent)">Маркет</div>
+          <div class="small muted">C-TOOLS и CO-NFT</div>
+        </div>
+        <button id="createListingBtn" class="ghost">Создать листинг</button>
+      </div>
+
+      <div class="market-tabs">
+        <button id="tabCtools" class="tab-btn">C-TOOLS</button>
+        <button id="tabConft" class="tab-btn active">CO-NFT</button>
+      </div>
+
+      <div id="marketBody"></div>
+    </section>
+  </main>
+
+  <footer style="text-align:center;font-size:12px;color:var(--muted);padding:12px 0">
+    Локальный прототип — данные сохраняются в браузере
+  </footer>
+</div>
+
+<!-- Modal -->
+<div class="modal-root" id="modalRoot">
+  <div class="dialog" id="dialogContent"></div>
+</div>
+
+<script>
+/* ======================
+   Data model & storage
+   ====================== */
+const KEY = 'conft_hopweb_v3';
+const state = JSON.parse(localStorage.getItem(KEY) || '{}');
+state.models = state.models || [];
+state.codes = state.codes || [];
+state.listings = state.listings || [];
+state.feed = state.feed || [];
+
+function save() {
+  localStorage.setItem(KEY, JSON.stringify(state));
+  updateCounters();
+  renderAll();
+}
+
+/* ======================
+   Configuration
+   ====================== */
+const MODEL_COUNT = 104;
+const modelImages = Array.from({ length: MODEL_COUNT }, (_, i) => `model${i + 1}.png`);
+const upgradedSuffix = '_u';
+
+/* ======================
+   Utilities
+   ====================== */
+function uid(prefix = 'id') { return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7); }
+function rand(n) { return Math.floor(Math.random() * n); }
+function pickN(arr, n) { const out = []; while (out.length < n) { const i = rand(arr.length); if (!out.includes(arr[i])) out.push(arr[i]); } return out; }
+function nowStr() { return new Date().toLocaleString(); }
+function pushFeed(txt) { state.feed.unshift({ t: Date.now(), txt }); if (state.feed.length > 50) state.feed.pop(); save(); }
+
+function randLetter() { return String.fromCharCode(65 + rand(26)); }
+function pickSym() {
+  const syms = ['@', '#', '$', '%', '^', '&', '*', '!', '?', '+', '=', '~'];
+  return syms[rand(syms.length)];
+}
+
+/* ======================
+   Rarity & codes
+   ====================== */
+const rarities = [
+  { name: 'Редкая', chance: 54.0, gen: () => `${randLetter()}${rand(1000)}` },
+  { name: 'Редкая2', chance: 38.0, gen: () => `${randLetter()}${rand(1000)}${randLetter()}` },
+  { name: 'Универсальная', chance: 7.18, gen: () => `${randLetter()}${randLetter()}${rand(1000)}` },
+  { name: 'Юникод', chance: 0.8, gen: () => `${pickSym()}${randLetter()}${rand(1000)}${pickSym()}` }
+];
+
+function rollRarity() {
+  const roll = Math.random() * 100;
+  let sum = 0;
+  for (const r of rarities) {
+    sum += r.chance;
+    if (roll <= sum) return r;
+  }
+  return rarities[0];
+}
+
+function generateCode() {
+  const r = rollRarity();
+  return { id: uid('code'), code: r.gen(), rarity: r.name, used: false, created: nowStr() };
+}
+
+/* ======================
+   Models
+   ====================== */
+function createModel(image) {
+  return { id: uid('nft'), image, upgraded: false, created: nowStr(), rarity: rollRarity().name };
+}
+
+function getImageSrc(model) {
+  return model.upgraded ? model.image.replace('.png', upgradedSuffix + '.png') : model.image;
+}
+
+/* ======================
+   DOM Elements
+   ====================== */
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+
+const els = {
+  pages: $$('[id^="page-"]'),
+  tabs: $$('.tab-btn'),
+  spinBtn: $('#spin'),
+  boxes: $('#boxes'),
+  counterNFT: $('#counter-nft'),
+  inventoryGrid: $('#inventoryGrid'),
+  codesList: $('#codesList'),
+  codesCount: $('#codesCount'),
+  upgradeSelect: $('#upgradeSelect'),
+  applyUpgradeBtn: $('#applyUpgradeBtn'),
+  upgradeInfo: $('#upgradeInfo'),
+  upgradeDesc: $('#upgradeDesc'),
+  craftList: $('#craftList'),
+  craftCounter: $('#craftCounter'),
+  doCraftBtn: $('#doCraftBtn'),
+  resetCraftBtn: $('#resetCraftBtn'),
+  marketBody: $('#marketBody'),
+  tabCtools: $('#tabCtools'),
+  tabConft: $('#tabConft'),
+  createListingBtn: $('#createListingBtn'),
+  modalRoot: $('#modalRoot'),
+  dialogContent: $('#dialogContent'),
+  openInventoryBtn: $('#openInventoryBtn'),
+  openMarketBtn: $('#openMarketBtn'),
+  rollCodeInvBtn: $('#rollCodeInvBtn')
+};
+
+/* ======================
+   Navigation
+   ====================== */
+els.tabs.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    els.tabs.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    els.pages.forEach(p => p.style.display = 'none');
+    $(`#page-${tab}`).style.display = 'block';
+    if (tab === 'inv') renderInventory();
+    if (tab === 'actions') renderActions();
+    if (tab === 'market') renderMarket();
+  });
+});
+
+/* ======================
+   Roll Logic
+   ====================== */
+let rollBoxes = [];
+let selectedBox = null;
+
+function initRoll() {
+  rollBoxes = [];
+  selectedBox = null;
+  els.boxes.innerHTML = '';
+
+  for (let i = 0; i < 3; i++) {
+    const box = document.createElement('div');
+    box.className = 'box';
+    box.dataset.index = i;
+    box.innerHTML = `
+      <div class="placeholder">
+        <div class="small muted">?</div>
+      </div>
+    `;
+    box.addEventListener('click', () => selectGift(i));
+    els.boxes.appendChild(box);
+  }
+
+  els.spinBtn.disabled = false;
+  els.spinBtn.textContent = 'SPIN';
+}
+
+function rollGifts() {
+  if (rollBoxes.length > 0) return;
+
+  els.spinBtn.disabled = true;
+  els.spinBtn.textContent = 'Открываем...';
+
+  setTimeout(() => {
+    rollBoxes = pickN(modelImages, 3).map(img => createModel(img));
+    const boxes = $$('.box');
+
+    boxes.forEach((box, i) => {
+      box.classList.add('gift-mode');
+
+      setTimeout(() => {
+        box.classList.remove('gift-mode');
+        box.innerHTML = `
+          <div class="gift-box">
+            <div class="gift-ribbon"></div>
+          </div>
+        `;
+        // Переподключаем клик после замены HTML
+        box.onclick = () => selectGift(i);
+      }, 600 + i * 200);
+    });
+
+    setTimeout(() => {
+      els.spinBtn.disabled = false;
+      els.spinBtn.textContent = 'SPIN';
+    }, 1800);
+  }, 300);
+}
+
+function selectGift(i) {
+  if (rollBoxes.length === 0 || selectedBox !== null) return;
+
+  selectedBox = i;
+  $$('.box').forEach((b, idx) => {
+    b.classList.toggle('selected', idx === i);
+  });
+
+  const model = rollBoxes[i];
+  pushFeed(`Выбран подарок: Модель #${model.image.match(/\d+/)[0]} (${model.rarity})`);
+
+  setTimeout(() => {
+    state.models.push(model);
+    const code = generateCode();
+    state.codes.push(code);
+    pushFeed(`Получен код: ${code.code} (${code.rarity})`);
+    save();
+    initRoll();
+  }, 800);
+}
+
+els.spinBtn.addEventListener('click', rollGifts);
+
+/* ======================
+   Inventory
+   ====================== */
+function renderInventory() {
+  els.inventoryGrid.innerHTML = '';
+  state.models.forEach(model => {
+    const card = document.createElement('div');
+    card.className = 'inv-card';
+    card.innerHTML = `
+      <img src="${getImageSrc(model)}" alt="">
+      <div class="inv-meta">
+        <div class="inv-meta-row"><span>#${model.image.match(/\d+/)[0]}</span><span>${model.rarity}</span></div>
+        <div class="inv-meta-row"><span class="small muted">${model.upgraded ? 'Апгрейд' : 'Оригинал'}</span></div>
+      </div>
+    `;
+    els.inventoryGrid.appendChild(card);
+  });
+
+  els.codesList.innerHTML = '';
+  state.codes.filter(c => !c.used).forEach(code => {
+    const div = document.createElement('div');
+    div.className = 'listing';
+    div.style.padding = '8px';
+    div.innerHTML = `
+      <div class="listing-info">
+        <div class="listing-title">${code.code}</div>
+        <div class="listing-seller">${code.rarity}</div>
+      </div>
+      <div class="badge">Свободен</div>
+    `;
+    els.codesList.appendChild(div);
+  });
+}
+
+els.rollCodeInvBtn.addEventListener('click', () => {
+  const code = generateCode();
+  state.codes.push(code);
+  pushFeed(`Прокручен код: ${code.code}`);
+  save();
+});
+
+/* ======================
+   Actions: Upgrade & Craft
+   ====================== */
+let selectedForCraft = new Set();
+
+function renderActions() {
+  renderUpgradePanel();
+  renderCraftPanel();
+}
+
+function renderUpgradePanel() {
+  els.upgradeSelect.innerHTML = '<option value="">Выберите NFT</option>';
+  state.models.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = `#${m.image.match(/\d+/)[0]} ${m.upgraded ? '[Апгрейд]' : ''}`;
+    els.upgradeSelect.appendChild(opt);
+  });
+
+  els.upgradeSelect.addEventListener('change', () => {
+    const model = state.models.find(m => m.id === els.upgradeSelect.value);
+    if (!model) {
+      els.upgradeInfo.textContent = '—';
+      els.upgradeDesc.textContent = 'Выберите NFT для апгрейда';
+      return;
+    }
+    els.upgradeInfo.textContent = `#${model.image.match(/\d+/)[0]}`;
+    els.upgradeDesc.textContent = model.upgraded ? 'Уже апгрейднуто' : 'Доступно для апгрейда';
+  });
+
+  els.applyUpgradeBtn.onclick = () => {
+    const modelId = els.upgradeSelect.value;
+    const model = state.models.find(m => m.id === modelId);
+    if (!model || model.upgraded) return;
+
+    const freeCode = state.codes.find(c => !c.used);
+    if (!freeCode) {
+      alert('Нет свободных кодов!');
+      return;
+    }
+
+    model.upgraded = true;
+    freeCode.used = true;
+    pushFeed(`Апгрейд: ${model.image} + ${freeCode.code}`);
+    save();
+    renderUpgradePanel();
+  };
+}
+
+function renderCraftPanel() {
+  els.craftList.innerHTML = '';
+  selectedForCraft.clear();
+  updateCraftCounter();
+
+  state.models.forEach(model => {
+    const card = document.createElement('div');
+    card.className = 'inv-card';
+    card.dataset.id = model.id;
+    card.innerHTML = `
+      <img src="${getImageSrc(model)}" alt="">
+      <div class="inv-meta"><div>#${model.image.match(/\d+/)[0]}</div></div>
+    `;
+    card.addEventListener('click', () => {
+      if (selectedForCraft.has(model.id)) {
+        selectedForCraft.delete(model.id);
+      } else if (selectedForCraft.size < 3) {
+        selectedForCraft.add(model.id);
+      }
+      card.classList.toggle('selected', selectedForCraft.has(model.id));
+      updateCraftCounter();
+    });
+    els.craftList.appendChild(card);
+  });
+
+  els.resetCraftBtn.onclick = () => {
+    selectedForCraft.clear();
+    $$('#craftList .inv-card').forEach(c => c.classList.remove('selected'));
+    updateCraftCounter();
+  };
+
+  els.doCraftBtn.onclick = () => {
+    if (selectedForCraft.size < 2) return;
+    const selected = Array.from(selectedForCraft).map(id => state.models.find(m => m.id === id));
+    const newImg = pickN(modelImages, 1)[0];
+    const newModel = createModel(newImg);
+    newModel.rarity = 'Эволюция';
+
+    selected.forEach(m => {
+      state.models.splice(state.models.indexOf(m), 1);
+    });
+
+    state.models.push(newModel);
+    pushFeed(`Эволюция: ${selected.length} → ${newImg}`);
+    save();
+    selectedForCraft.clear();
+    renderCraftPanel();
+  };
+}
+
+function updateCraftCounter() {
+  els.craftCounter.textContent = `${selectedForCraft.size} выбрано`;
+  els.doCraftBtn.disabled = selectedForCraft.size < 2;
+}
+
+/* ======================
+   Market
+   ====================== */
+function renderMarket() {
+  const isConft = els.tabConft.classList.contains('active');
+  els.marketBody.innerHTML = '';
+
+  const items = isConft
+    ? state.models.map(m => ({ type: 'nft', data: m }))
+    : state.codes.filter(c => !c.used).map(c => ({ type: 'code', data: c }));
+
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'listing';
+    if (item.type === 'nft') {
+      const m = item.data;
+      div.innerHTML = `
+        <img src="${getImageSrc(m)}" style="width:48px;height:48px;border-radius:8px;object-fit:cover">
+        <div class="listing-info">
+          <div class="listing-title">#${m.image.match(/\d+/)[0]}</div>
+          <div class="listing-seller">${m.rarity} ${m.upgraded ? '• Апгрейд' : ''}</div>
+        </div>
+        <div class="listing-price-area">
+          <div class="listing-price">0.01 ETH</div>
+          <button class="ghost" style="font-size:11px;padding:4px 8px">Купить</button>
+        </div>
+      `;
+    } else {
+      const c = item.data;
+      div.innerHTML = `
+        <div class="gift-box" style="width:40px;height:40px"><div class="gift-ribbon"></div></div>
+        <div class="listing-info">
+          <div class="listing-title">${c.code}</div>
+          <div class="listing-seller">${c.rarity}</div>
+        </div>
+        <div class="listing-price-area">
+          <div class="listing-price">0.001 ETH</div>
+          <button class="ghost" style="font-size:11px;padding:4px 8px">Купить</button>
+        </div>
+      `;
+    }
+    els.marketBody.appendChild(div);
+  });
+}
+
+els.tabCtools.onclick = () => { els.tabCtools.classList.add('active'); els.tabConft.classList.remove('active'); renderMarket(); };
+els.tabConft.onclick = () => { els.tabConft.classList.add('active'); els.tabCtools.classList.remove('active'); renderMarket(); };
+
+els.createListingBtn.onclick = () => {
+  openModal(`
+    <h3 style="margin-top:0;color:var(--accent)">Создать листинг</h3>
+    <p class="small muted">В прототипе — только демонстрация</p>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="ghost" onclick="closeModal()">Отмена</button>
+      <button class="spin-btn" style="flex:1" onclick="alert('Листинг создан! (демо)'); closeModal()">Создать</button>
+    </div>
+  `);
+};
+
+/* ======================
+   Modal
+   ====================== */
+function openModal(html) {
+  els.dialogContent.innerHTML = html;
+  els.modalRoot.style.display = 'grid';
+}
+
+function closeModal() {
+  els.modalRoot.style.display = 'none';
+}
+
+els.modalRoot.addEventListener('click', (e) => {
+  if (e.target === els.modalRoot) closeModal();
+});
+
+/* ======================
+   Quick Actions
+   ====================== */
+els.openInventoryBtn.onclick = () => {
+  els.tabs.forEach(b => b.classList.remove('active'));
+  $$('.tab-btn[data-tab="inv"]')[0].classList.add('active');
+  els.pages.forEach(p => p.style.display = 'none');
+  $('#page-inv').style.display = 'block';
+  renderInventory();
+};
+els.openMarketBtn.onclick = () => {
+  els.tabs.forEach(b => b.classList.remove('active'));
+  $$('.tab-btn[data-tab="market"]')[0].classList.add('active');
+  els.pages.forEach(p => p.style.display = 'none');
+  $('#page-market').style.display = 'block';
+  renderMarket();
+};
+
+/* ======================
+   Counters & Render
+   ====================== */
+function updateCounters() {
+  els.counterNFT.textContent = `${state.models.length} NFT`;
+  els.codesCount.textContent = `${state.codes.filter(c => !c.used).length} кодов`;
+}
+
+function renderAll() {
+  updateCounters();
+  const activeTab = $('.tab-btn.active').dataset.tab;
+  if (activeTab === 'inv') renderInventory();
+  if (activeTab === 'actions') renderActions();
+  if (activeTab === 'market') renderMarket();
+}
+
+/* ======================
+   Action Tabs (Upgrade/Craft)
+   ====================== */
+$$('.action-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const action = tab.dataset.action;
+    $$('.action-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    $('#upgrade-panel').style.display = action === 'upgrade' ? 'block' : 'none';
+    $('#craft-panel').style.display = action === 'craft' ? 'block' : 'none';
+    if (action === 'craft') renderCraftPanel();
+  });
+});
+
+/* ======================
+   Init
+   ====================== */
+initRoll();
+renderAll();
+</script>
+</body>
+</html>
